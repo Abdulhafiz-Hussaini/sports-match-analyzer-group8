@@ -2,12 +2,7 @@ from match import Match
 from match_analyzer import MatchAnalyzer
 
 
-# =========================================================
-# ARSENAL RECENT RESULTS
-# =========================================================
-
 arsenal_matches = [
-
     Match(
         "1",
         "Arsenal",
@@ -16,7 +11,6 @@ arsenal_matches = [
         home_score=3,
         away_score=1
     ),
-
     Match(
         "2",
         "Liverpool",
@@ -25,7 +19,6 @@ arsenal_matches = [
         home_score=2,
         away_score=2
     ),
-
     Match(
         "3",
         "Arsenal",
@@ -34,7 +27,6 @@ arsenal_matches = [
         home_score=2,
         away_score=0
     ),
-
     Match(
         "4",
         "Manchester City",
@@ -43,7 +35,6 @@ arsenal_matches = [
         home_score=1,
         away_score=0
     ),
-
     Match(
         "5",
         "Arsenal",
@@ -55,12 +46,7 @@ arsenal_matches = [
 ]
 
 
-# =========================================================
-# CHELSEA RECENT RESULTS
-# =========================================================
-
 chelsea_matches = [
-
     Match(
         "6",
         "Chelsea",
@@ -69,7 +55,6 @@ chelsea_matches = [
         home_score=1,
         away_score=2
     ),
-
     Match(
         "7",
         "Chelsea",
@@ -78,7 +63,6 @@ chelsea_matches = [
         home_score=2,
         away_score=2
     ),
-
     Match(
         "8",
         "Everton",
@@ -87,7 +71,6 @@ chelsea_matches = [
         home_score=0,
         away_score=1
     ),
-
     Match(
         "9",
         "Chelsea",
@@ -96,7 +79,6 @@ chelsea_matches = [
         home_score=3,
         away_score=1
     ),
-
     Match(
         "10",
         "Manchester City",
@@ -108,94 +90,41 @@ chelsea_matches = [
 ]
 
 
-# =========================================================
-# CREATE ANALYZER
-# =========================================================
+def test_analyze_form():
+    analyzer = MatchAnalyzer("Arsenal")
 
-arsenal_analyzer = MatchAnalyzer(
-    "Arsenal"
-)
+    stats = analyzer.analyze_form(arsenal_matches)
 
-
-# =========================================================
-# TEST 1: FORM ANALYSIS
-# =========================================================
-
-print("=" * 55)
-print("TEST 1: ARSENAL FORM ANALYSIS")
-print("=" * 55)
-
-arsenal_stats = arsenal_analyzer.analyze_form(
-    arsenal_matches
-)
-
-print("Team:", arsenal_stats["team"])
-print("Matches:", arsenal_stats["matches"])
-print("Wins:", arsenal_stats["wins"])
-print("Draws:", arsenal_stats["draws"])
-print("Losses:", arsenal_stats["losses"])
-print("Goals scored:", arsenal_stats["goals_scored"])
-print("Goals conceded:", arsenal_stats["goals_conceded"])
-print("Points:", arsenal_stats["points"])
+    assert stats["team"] == "Arsenal"
+    assert stats["matches"] == 5
+    assert stats["wins"] == 3
+    assert stats["draws"] == 1
+    assert stats["losses"] == 1
+    assert stats["goals_scored"] == 9
+    assert stats["goals_conceded"] == 5
+    assert stats["points"] == 10
 
 
-# =========================================================
-# TEST 2: FORM STRING
-# =========================================================
+def test_form_string():
+    analyzer = MatchAnalyzer("Arsenal")
 
-print("\n")
-print("=" * 55)
-print("TEST 2: RECENT FORM")
-print("=" * 55)
+    form = analyzer.form_string(arsenal_matches)
 
-print(
-    "Arsenal form:",
-    arsenal_analyzer.form_string(
-        arsenal_matches
+    assert form == "W D W L W"
+
+
+def test_predict_match():
+    analyzer = MatchAnalyzer("Arsenal")
+
+    prediction = analyzer.predict_match(
+        "Chelsea",
+        arsenal_matches,
+        chelsea_matches
     )
-)
 
-
-# =========================================================
-# TEST 3: SIMPLE PREDICTION
-# =========================================================
-
-print("\n")
-print("=" * 55)
-print("TEST 3: SIMPLE MATCH PREDICTION")
-print("=" * 55)
-
-prediction = arsenal_analyzer.predict_match(
-    "Chelsea",
-    arsenal_matches,
-    chelsea_matches
-)
-
-print(
-    "Prediction:",
-    prediction["prediction"]
-)
-
-print(
-    "Result:",
-    prediction["result"]
-)
-
-print(
-    "Confidence:",
-    prediction["confidence"],
-    "%"
-)
-
-print(
-    "Arsenal average:",
-    prediction["team_average"]
-)
-
-print(
-    "Chelsea average:",
-    prediction["opponent_average"]
-)
-
-print("\nNOTE:")
-print(prediction["message"])
+    assert prediction["prediction"] == "Draw"
+    assert prediction["result"] == "Draw"
+    assert prediction["confidence"] == 65.0
+    assert prediction["team_average"] == 2.0
+    assert prediction["opponent_average"] == 1.4
+    assert "not a guaranteed prediction" in prediction["message"]

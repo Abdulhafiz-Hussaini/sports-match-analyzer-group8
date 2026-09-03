@@ -2,10 +2,6 @@ from team import Team
 from match import Match
 
 
-# ---------------------------------------------------------
-# TEST TEAM
-# ---------------------------------------------------------
-
 team_data = {
     "idTeam": "133604",
     "strTeam": "   Arsenal     ",
@@ -15,20 +11,6 @@ team_data = {
     "strBadge": "https://example.com/arsenal.png"
 }
 
-team = Team.from_api_dict(team_data)
-
-print("TEAM TEST")
-print("--------------------")
-print("Name:", team.name)
-print("Sport:", team.sport)
-print("League:", team.league)
-print("Country:", team.country)
-print("Object:", team)
-
-
-# ---------------------------------------------------------
-# TEST MATCH
-# ---------------------------------------------------------
 
 match_data = {
     "idEvent": "12345",
@@ -42,16 +24,45 @@ match_data = {
     "strVenue": "Emirates Stadium"
 }
 
-match = Match.from_api_dict(match_data)
 
-print("\nMATCH TEST")
-print("--------------------")
-print("Match:", match.display_name())
-print("Date:", match.date)
-print("Score:", match.score)
-print("Finished:", match.is_finished)
+def test_team_from_api_dict():
+    team = Team.from_api_dict(team_data)
 
-print("\nRESULT TEST")
-print("--------------------")
-print("Arsenal:", match.result_for_team("Arsenal"))
-print("Chelsea:", match.result_for_team("Chelsea"))
+    assert team.team_id == "133604"
+    assert team.name == "Arsenal"
+    assert team.sport == "Soccer"
+    assert team.league == "English Premier League"
+    assert team.country == "England"
+    assert team.badge_url == "https://example.com/arsenal.png"
+
+
+def test_match_from_api_dict():
+    match = Match.from_api_dict(match_data)
+
+    assert match.match_id == "12345"
+    assert match.home_team == "Arsenal"
+    assert match.away_team == "Chelsea"
+    assert match.home_score == 2
+    assert match.away_score == 1
+    assert match.status == "Match Finished"
+    assert match.venue == "Emirates Stadium"
+
+
+def test_match_score_and_finished_status():
+    match = Match.from_api_dict(match_data)
+
+    assert match.score == "2-1"
+    assert match.is_finished is True
+
+
+def test_match_display_name():
+    match = Match.from_api_dict(match_data)
+
+    assert match.display_name() == "Arsenal vs Chelsea"
+
+
+def test_match_result_for_team():
+    match = Match.from_api_dict(match_data)
+
+    assert match.result_for_team("Arsenal") == "Win"
+    assert match.result_for_team("Chelsea") == "Loss"

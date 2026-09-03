@@ -1,121 +1,156 @@
+import pytest
+from unittest.mock import Mock
+
 from sports_api_client import SportsAPIClient
-from exceptions import SportsAPIError, TeamNotFoundError
+from exceptions import (
+    SportsAPIError,
+    TeamNotFoundError,
+)
+from team import Team
+from match import Match
 
 
-client = SportsAPIClient()
+def test_search_team_returns_team_objects():
+    client = SportsAPIClient()
 
-# Start with an empty list so the variable always exists
-teams = []
+    client._get = Mock(return_value={
+        "teams": [
+            {
+                "idTeam": "133604",
+                "strTeam": "Arsenal",
+                "strSport": "Soccer",
+                "strLeague": "English Premier League",
+                "strCountry": "England",
+                "strTeamBadge": "https://example.com/arsenal.png",
+            }
+        ]
+    })
 
-
-# ---------------------------------------------------------
-# TEST 1: SEARCH TEAM
-# ---------------------------------------------------------
-
-print("=" * 50)
-print("TEST 1: SEARCHING FOR ARSENAL")
-print("=" * 50)
-
-try:
     teams = client.search_team("Arsenal")
 
-    print(f"Found {len(teams)} team(s).\n")
+    assert len(teams) == 1
+    assert isinstance(teams[0], Team)
+    assert teams[0].name == "Arsenal"
+    assert teams[0].team_id == "133604"
 
-    for team in teams[:5]:
-        print("Team ID:", team.team_id)
-        print("Name:", team.name)
-        print("Sport:", team.sport)
-        print("League:", team.league)
-        print("Country:", team.country)
-        print("-" * 30)
-
-except TeamNotFoundError as error:
-    print("Team error:", error)
-
-except SportsAPIError as error:
-    print("API error:", error)
+    client._get.assert_called_once()
 
 
-# ---------------------------------------------------------
-# TEST 2: UPCOMING MATCHES
-# ---------------------------------------------------------
+def test_search_team_raises_when_team_not_found():
+    client = SportsAPIClient()
 
-if teams:
+    client._get = Mock(return_value={
+        "teams": None
+    })
 
-    team = teams[0]
-
-    print("\n")
-    print("=" * 50)
-    print(f"TEST 2: UPCOMING MATCHES FOR {team.name}")
-    print("=" * 50)
-
-    try:
-        upcoming = client.get_next_events(team.team_id)
-
-        if not upcoming:
-            print("No upcoming matches found.")
-
-        else:
-            for match in upcoming[:5]:
-                print(match.display_name())
-                print("Date:", match.date)
-                print("Status:", match.status)
-                print("Venue:", match.venue)
-                print("-" * 30)
-
-    except SportsAPIError as error:
-        print("API error:", error)
+    with pytest.raises(TeamNotFoundError):
+        client.search_team("ThisTeamDefinitelyDoesNotExist123456")
 
 
-# ---------------------------------------------------------
-# TEST 3: PREVIOUS RESULTS
-# ---------------------------------------------------------
+def test_get_next_events_returns_match_objects():
+    client = SportsAPIClient()
 
-if teams:
+    client._get = Mock(return_value={
+        "events": [
+            {
+                "idEvent": "999001",
+                "strHomeTeam": "Arsenal",
+                "strAwayTeam": "Chelsea",
+                "dateEvent": "2026-09-06",
+                "strTime": "15:30:00",
+                "intHomeScore": None,
+                "intAwayScore": None,
+                "strStatus": "NS",
+                "strVenue": "Emirates Stadium",
+            }
+        ]
+    })
 
-    print("\n")
-    print("=" * 50)
-    print(f"TEST 3: RECENT RESULTS FOR {team.name}")
-    print("=" * 50)
+    matches = client.get_next_events("133604")
 
-    try:
-        recent = client.get_last_events(team.team_id)
-
-        if not recent:
-            print("No recent results found.")
-
-        else:
-            for match in recent[:5]:
-                print(match.display_name())
-                print("Date:", match.date)
-                print("Score:", match.score)
-                print(
-                    f"{team.name}:",
-                    match.result_for_team(team.name)
-                )
-                print("-" * 30)
-
-    except SportsAPIError as error:
-        print("API error:", error)
+    assert len(matches) == 1
+    assert isinstance(matches[0], Match)
+    assert matches[0].home_team == "Arsenal"
+    assert matches[0].away_team == "Chelsea"
+    assert matches[0].status == "NS"
 
 
-# ---------------------------------------------------------
-# TEST 4: INVALID TEAM
-# ---------------------------------------------------------
+def test_get_last_events_returns_match_objects():
+    client = SportsAPIClient()
 
-print("\n")
-print("=" * 50)
-print("TEST 4: INVALID TEAM")
-print("=" * 50)
+    client._get = Mock(return_value={
+        "results": [
+            {
+                "idEvent": "999002",
+                "strHomeTeam": "Arsenal",
+                "strAwayTeam": "Chelsea",
+                "dateEvent": "2026-08-20",
+                "strTime": "18:00:00",
+                "intHomeScore": "2",
+                "intAwayScore": "1",
+                "strStatus": "FT",
+                "strVenue": "Emirates Stadium",
+            }
+        ]
+    })
 
-try:
-    client.search_team(
-        "ThisTeamDefinitelyDoesNotExist123456"
+    matches = client.get_last_events("133604")
+
+    assert len(matches) == 1
+    assert isinstance(matches[0], Match)
+    assert matches[0].score == "2-1"
+    assert matches[0].is_finished is True
+
+
+def test_get_next_events_requires_team_id():
+    client = SportsAPIClient()
+
+    with pytest.raises(SportsAPIError):
+        client.get_next_events("")
+
+
+def test_get_last_events_requires_team_id():
+    client = SportsAPIClient()
+
+    with pytest.raises(SportsAPIError):
+        client.get_last_events("")
+
+
+def test_get_team_matches_returns_both_sections():
+    client = SportsAPIClient()
+
+    upcoming_match = Mock()
+    recent_match = Mock()
+
+    client.get_next_events = Mock(
+        return_value=[upcoming_match]
+    )
+    client.get_last_events = Mock(
+        return_value=[recent_match]
     )
 
-except TeamNotFoundError as error:
-    print("Correctly handled:")
-    print(error)
+    team = Team(
+        team_id="133604",
+        name="Arsenal",
+        sport="Soccer",
+        league="English Premier League",
+        country="England",
+        badge_url=None,
+    )
 
-except SportsAPIError as error:
-    print("API error:", error)
+    result = client.get_team_matches(team)
+
+    assert "upcoming" in result
+    assert "recent" in result
+    assert result["upcoming"] == [upcoming_match]
+    assert result["recent"] == [recent_match]
+
+    client.get_next_events.assert_called_once_with("133604")
+    client.get_last_events.assert_called_once_with("133604")
+
+
+def test_get_team_matches_rejects_invalid_team():
+    client = SportsAPIClient()
+
+    with pytest.raises(TypeError):
+        client.get_team_matches("Arsenal")
